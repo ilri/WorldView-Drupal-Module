@@ -1,0 +1,8 @@
+; $Id$
+name = WorldView
+description = "Plots positions and information on Google Earth and Google Maps."
+core = 7.x
+files[] = WorldView.module
+files[] = WorldView.inc
+stylesheets[all][] =  WorldView.css
+configure = admin/config/content/WorldView

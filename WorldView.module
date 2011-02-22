@@ -1,0 +1,347 @@
+<?php
+
+// $Id$
+
+/**
+ * Initialize the WorldView Google Earth interface.
+ *
+ * This function loads external resources that are used by the WorldView 
+ * module. Mainly it lods the module specific css-files.
+*/
+function WorldView_init() {
+	drupal_add_css(drupal_get_path('module', 'WorldView') . '/WorldView.css');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.inc');
+	if (variable_get('worldview_api_key', '') != '') {
+	  drupal_add_js('https://www.google.com/jsapi?key=' . variable_get('worldview_api_key', ''), 'external');
+	  drupal_add_js(drupal_get_path('module', 'WorldView') . '/WorldView.js');
+	}
+}
+
+/** 
+ * Generates a user help page. 
+ *
+ * Creates a help page for the WorldView module. Explains configuration, usage 
+ * and some tips and tricks on what can be done.
+ *
+ * @param string $path
+ *   The router menu path, as defined in WorldView_menu().
+ * @param array $arg
+ *   An array that corresponds to the return value of the arg() function, for 
+ *   modules that want to provide help that is specific to certain values of 
+ *   wildcards in $path. For example, you could provide help for the path 
+ *   'user/1' by looking for the path 'user/%' and $arg[1] == '1'. This array 
+ *   should always be used rather than directly invoking arg(), because your 
+ *   hook implementation may be called for other purposes besides building the 
+ *   current page's help. Note that depending on which module is invoking 
+ *   hook_help, $arg may contain only empty strings. Regardless, $arg[0] to 
+ *   $arg[11] will always be set.
+ *   
+ * @return string
+ *   A localized string containing the help text.
+*/
+function WorldView_help($path, $arg){
+  $help_output = '';
+  return $help_output;
+}
+
+/**
+ * Handles module permissions.
+ *
+ * Defines the permissions that are used by the WorldView module. The 
+ * permissions are: 
+ * - "access WorldView": Browse the maps in general and see open information.
+ *   To comply with googles standards of openness this has to be set for all 
+ *   users, even anonymous users, if you don't have a paid google earth 
+ *   license.
+ * - "access WorldView private": Private information is intended for 
+ *   Authorized Users. If there is no sensitive information on your map 
+ *   disregard this permission.
+ * - "administer WorldView": Allows users to administer the WorldView module.
+ *
+ * @return array 
+ *   An array of permission strings. The strings must not be wrapped with the 
+ *   t() function, since the string extractor takes care of extracting 
+ *   permission names defined in the perm hook for translation.
+*/
+function WorldView_permission(){
+  return array('administer WorldView' => array(
+                 'title' => t('Administer WorldView'),
+                 'description' => t('Allows a user to administer the maps and 
+                                     settings of the WorldView module.'),
+               ),
+               'access WorldView' => array(
+                 'title' => t('Access WorldView'),
+                 'description' => t('To comply with googles standards of 
+                                     openness this has to be set for all 
+                                     users, even anonymous users, if you 
+                                     don\'t have a paid google earth license.'
+                                     ),
+               ), 
+               'access WorldView private' => array(
+                 'title' => t('Access WorldView Private'),
+                 'description' => t('This permission can be used to hide 
+                                     sensitive information from unauthorized 
+                                     users.'),
+               ),
+              );
+}
+
+/**
+ * Creates the administration form for the WorldView module.
+ *
+ * Creates the administration form for the WorldView module, the form can be 
+ * found at /admin/settings/WorldView as defined in WorldView_menu.
+ *
+ * @return array $form
+ *   A drupal form formatted by system_settings_form().
+*/
+function WorldView_admin() {
+  $form = array();
+  $form['worldview_google'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Google Maps/Earth Settings'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_google']['worldview_api_key'] = 
+    array('#type' => 'textfield',
+	  '#title' => t('Google Maps API key'),
+	  '#default_value' => variable_get('worldview_api_key', ''),
+	  '#size' => 120,
+	  '#maxlength' => 90,
+	  '#description' => t('To use google maps or google earth you need to get an 
+	                       API key from Google. You can get an API key ' . 
+	                       l('here', 
+	                         'http://code.google.com/apis/maps/signup.html') . 
+	                       '. Remember that you have to register a unique key for
+	                       each domain. Use http://localhost as host for local 
+	                       debugging.'),
+	  '#required' => TRUE,
+	  );
+	$form['worldview_database'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('External Database Settings'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_database']['worldview_db_host'] = 
+    array('#type' => 'textfield',
+	  '#title' => t('Database Host'),
+	  '#default_value' => variable_get('worldview_db_host', 'localhost'),
+	  '#size' => 120,
+	  '#maxlength' => 90,
+	  '#description' => t('Host name of the database. I.e. "http://example.com/" or "127.0.0.1".'),
+	  '#required' => FALSE,
+	  );
+  $form['worldview_database']['worldview_db_user'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Database User'),
+    '#default_value' => variable_get('worldview_db_user', ''),
+    '#size' => 120,
+    '#maxlength' => 90,
+    '#description' => t('User name for the database. I.e. "root" on insecure systems or your username or project username for most systems.'),
+    '#required' => FALSE,
+    );
+  $form['worldview_database']['worldview_db_pass'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Database Password'),
+    '#default_value' => variable_get('worldview_db_pass', ''),
+    '#size' => 120,
+    '#maxlength' => 90,
+    '#description' => t('Password for your user in the database. Keep it secret. Keep it secure.'),
+    '#required' => FALSE,
+    );
+  $form['worldview_database']['worldview_db_name'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Database Name'),
+    '#default_value' => variable_get('worldview_db_name', ''),
+    '#size' => 120,
+    '#maxlength' => 90,
+    '#description' => t('Name of the database to be used at the specified host. Do not confuse with username.'),
+    '#required' => FALSE,
+    );
+  return system_settings_form($form); 
+}
+
+/**
+ * Validation function for the WorldView administration form.
+ *
+ * Validation function for the WorldView administration form. As of now no 
+ * validation is implemented so make sure to check your form values if 
+ * things are not working as expected.
+ *
+ * @param array $form
+ *   An associative array containing the structure of the form.
+ * @param array &$form_state
+ *   A keyed array containing the current state of the form. The current 
+ *   user-submitted data is stored in $form_state['values'], though form 
+ *   validation functions are passed an explicit copy of the values for the 
+ *   sake of simplicity. Validation handlers can also $form_state to pass 
+ *   information on to submit handlers. 
+*/
+function WorldView_admin_validate($form, &$form_state) {
+
+}
+
+/**
+ * Creates the WorldView paths and menu items.
+ *
+ * Defines paths to WorldView pages and defines WorldView menu items. The 
+ * items that are defined are:
+ * - admin/config/worldview: This is the administration page
+ * - /worldview: This is the main map page
+*/
+function WorldView_menu() {
+  $items = array();
+  $items['admin/config/content/worldview'] = 
+    array('title' => 'WorldView',
+	  'description' => 'Administration page for the WorldView module.',
+	  'page callback' => 'drupal_get_form',
+	  'page arguments' => array('WorldView_admin'),
+	  'access arguments' => array('administer WorldView'),
+	  'type' => MENU_NORMAL_ITEM,
+	  );
+	$items['worldview'] =
+    array('page callback' => 'WorldView_KML',
+	  'access arguments' => array('access WorldView'),
+	  'type' => MENU_CALLBACK,
+	  );
+  return $items;
+}
+
+/**
+ * Creates the blocks of the WorldView module.
+ *
+ * Creates the block content for the WorldView module. Two different blocks 
+ * are created, one with controls for what to display on the maps, and one 
+ * that holds the actual map itself.
+ * 
+ * @return array $blocks
+*/
+function WorldView_block_info(){
+  $blocks = array();
+
+  // This is the control block
+  $blocks['WorldView_controls'] = array(
+    'info' => t('WorldView Controls'),
+  );
+  
+  // This is the map block
+  $blocks['WorldView_map'] = array(
+    'info' => t('WorldView Map'),
+  );
+  
+  return $blocks;
+}
+
+/**
+ * Creates the configuration form for the WorldView module blocks.
+ *
+ * Creates the configuration form for the WorldView module blocks.
+ *
+ * @param string $delta
+ *   Which block is being configured. This is a unique identifier for the 
+ *   block within the module, defined in hook_block_info().
+ *
+ * @return array $form
+ *   A configuration form, if one is needed for your block beyond the standard 
+ *   elements that the block module provides (block title, visibility, etc.).
+*/
+function WorldView_block_configure($delta = '') {
+  $form = array();
+  return $form; 
+}
+
+/**
+ * Saves the configuration options from WorldView_block_configure()
+ *
+ * This hook allows you to save the block-specific configuration settings 
+ * defined in WorldView_block_configure().
+ *
+ * @param string $delta
+ *   Which block is being configured. This is a unique identifier for the 
+ *   block within the module, defined in hook_block_info().
+ *
+ * @param array $edit
+ *   The submitted form data from the configuration form.
+ *
+ * @return array $form
+ *   A configuration form, if one is needed for your block beyond the standard 
+ *   elements that the block module provides (block title, visibility, etc.).
+*/
+function WorldView_block_save($delta = '', $edit = array()) {
+}
+
+/**
+ * The main WorldView blocks view. This is where the maps and controls are!
+ *
+ * The pages of the WorldView module are rendered here, Most of the actual 
+ * rendering is made using external functions but this function passes them 
+ * to the renderer.
+ *
+ * @param string $delta
+ *   Which block to render. This is a unique identifier for the block within 
+ *   the module, defined in WorldView_block_info().
+ *
+ * @return array $page_content
+ *   An array containing the following elements:
+ *   - subject: The default localized title of the block. If the block does 
+ *     not have a default title, this should be set to NULL.
+ *   - content: The content of the block's body. This may be a renderable 
+ *     array (preferable) or a string containing rendered HTML content.
+*/
+function WorldView_block_view($delta = '') {
+  $page_content = array('subject' => '',
+                        'content' => '<div id="WorldView">',);
+  
+  if (module_exists('locale')) {
+    $languages = language_list();
+    // Todo: Implement translations
+  }
+  if ($delta == 'WorldView_map') {
+    $page_content['content'] .= '<div id="WorldView_map"></div>';
+    $page_content['content'] .= '<div id="WorldView_tou">';
+    $page_content['content'] .= t('Before using this tool please read and understand Googles ' .  l(t('Terms of Use'), 'http://code.google.com/apis/maps/terms.html') . '.');
+    $page_content['content'] .= '</div>';
+  }
+  if ($delta == 'WorldView_controls') {
+    $page_content['content'] .= '<div id="WorldView_controls">[controls placeholder]</div>';
+  }
+  $page_content['content'] .= '</div>';
+  return $page_content;
+}
+
+/**
+ * Prints database information formatted as a KML file
+ *
+ * Note that this function returns a KML file and does not print anything to 
+ * drupal. This is a purely back-end function.
+ *
+ * @param string $file
+ *   Name of the KML generation function to be used internally
+*/
+function WorldView_KML($file = 'ILRI') {
+  $dom = new DOMDocument('1.0', 'UTF-8');
+  $dom->formatOutput = true;
+  drupal_add_http_header('Content-Type', 'application/vnd.google-earth.kml+xml');
+  drupal_add_http_header('Content-Disposition', 'inline; filename=' . $file . '.kml;');
+  
+  // Creates the root KML element and appends it to the root document.
+  $node = $dom->createElementNS('http://earth.google.com/kml/2.1', 'kml');
+  $parNode = $dom->appendChild($node);
+
+  // Creates a KML Document element and append it to the KML element.
+  $dnode = $dom->createElement('Document');
+  $docNode = $parNode->appendChild($dnode);
+  
+  $docNode->appendChild(_WorldView_Icons($dom, 'jeep'));
+  $docNode->appendChild(_WorldView_Icons($dom, 'biohazard'));
+  $docNode->appendChild(_WorldView_ILRI($dom, 'biohazard'));
+  try {
+    foreach(_WorldView_SamplingTrips($dom, 'jeep') as $samplingTrip) {
+      $docNode->appendChild($samplingTrip);
+    }
+  } catch (Exception $e) {
+    error_log($e, 0);
+  }
+  echo $dom->saveXML();
+  exit(0);
+}
