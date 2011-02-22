@@ -197,7 +197,7 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
  *   A DOMElement containing the ILRI placemark
 */
 function _WorldView_ILRI(&$dom, $icon = "default") {
-  return _WorldView_Placemark(&$dom, 'ILRI', 'the place to be', '36.722287', '-1.2686', $icon);
+  return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '36.722287', '-1.2686', $icon);
 }
 
 
@@ -238,7 +238,7 @@ function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
   if (!$conn['error']) {
     $results = mysql_query($query);
     foreach($results as $result) {
-      array_push($samplingTrips, _WorldView_Placemark(&$dom, $result[0], $result[1], $result[2], $result[3], $icon));
+      array_push($samplingTrips, _WorldView_Placemark($dom, $result[0], $result[1], $result[2], $result[3], $icon));
     }
   } else {
     throw new Exception($conn['error']); 
