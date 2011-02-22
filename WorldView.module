@@ -141,7 +141,7 @@ function WorldView_admin() {
     '#required' => FALSE,
     );
   $form['worldview_database']['worldview_db_pass'] = 
-    array('#type' => 'textfield',
+    array('#type' => 'password',
     '#title' => t('Database Password'),
     '#default_value' => variable_get('worldview_db_pass', ''),
     '#size' => 120,

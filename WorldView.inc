@@ -6,16 +6,16 @@
  *   Constants used by the WorldView module
  *
  *   This include file implements the defaults for the WorldView module.
- */
+*/
 
 /**
  * The KML indentation
- */
+*/
 define('KML_INDENTATION', "\t");
 
 /**
  * Icons directory to be used
- */
+*/
 define('WORLDVIEW_ICONS', DRUPAL_ROOT . '/' . drupal_get_path('module', 'WorldView') . '/icons');
 
 /**
@@ -23,7 +23,7 @@ define('WORLDVIEW_ICONS', DRUPAL_ROOT . '/' . drupal_get_path('module', 'WorldVi
  *
  * @param int $indentation
  *   The indentation value for the block
- */
+*/
 function _WorldView_indent($indentation = 0) {
   $output = '';
   for ($i = 0; $i < $indentation; $i++) {
@@ -43,7 +43,7 @@ function _WorldView_indent($indentation = 0) {
  *
  * @return string $KML
  *   A formatted KML string
- */
+*/
 function _WorldView_print_KML($input = array(), $indentation = 0) {
   $output = '';
   foreach ($input as $key => $value) {
@@ -88,7 +88,7 @@ function _WorldView_print_KML($input = array(), $indentation = 0) {
  *   - link: a resource containing the database interface
  *   - status: a status message
  *   - error: any error messages
- */
+*/
 function _WorldView_external_db($host, $user, $pass, $name) {
   // Connect to database and verify connection
   $connection['link'] = mysql_connect($host, $user, $pass);
@@ -121,7 +121,7 @@ function _WorldView_external_db($host, $user, $pass, $name) {
  *
  * @return DOMElement $restStyleNode
  *   A DOMElement containing the icon style
- */
+*/
 function _WorldView_Icons(&$dom, $icon = 'default') {
   if (substr($icon, -4) == '.png') {
     $icon = substr($icon, 0, -4);
@@ -163,7 +163,7 @@ function _WorldView_Icons(&$dom, $icon = 'default') {
 function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default") {
   $placeNode = $dom->createElement('Placemark');
   
-  $placeNode->setAttribute('id', 'placemark' . $name);
+  $placeNode->setAttribute('id', 'placemark' . str_replace(' ', '_', $name));
   $nameNode = $dom->createElement('name', $name);
   $placeNode->appendChild($nameNode);
   $descNode = $dom->createElement('description', $desc);
@@ -174,12 +174,11 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
   $pointNode = $dom->createElement('Point');
   $placeNode->appendChild($pointNode);
   
-  $coorStr = $lat . ',' . $lon;
+  $coorStr = $lon . ',' . $lat;
   $coorNode = $dom->createElement('coordinates', $coorStr);
   $pointNode->appendChild($coorNode);
   return $placeNode;
 }
-
 
 /**
  * TEMPORARY FUNCTIONS - REMOVE THESE OR AT LEAST DON'T RELY ON THEM
@@ -197,7 +196,7 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
  *   A DOMElement containing the ILRI placemark
 */
 function _WorldView_ILRI(&$dom, $icon = "default") {
-  return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '36.722287', '-1.2686', $icon);
+  return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '-1.2686', '36.722287', $icon);
 }
 
 
@@ -236,8 +235,8 @@ function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
                                  variable_get('worldview_db_pass', ''),
                                  variable_get('worldview_db_name', ''));
   if (!$conn['error']) {
-    $results = mysql_query($query);
-    foreach($results as $result) {
+    $results = mysql_query($query, $conn['link']);
+    while($result = mysql_fetch_row($results)) {
       array_push($samplingTrips, _WorldView_Placemark($dom, $result[0], $result[1], $result[2], $result[3], $icon));
     }
   } else {
