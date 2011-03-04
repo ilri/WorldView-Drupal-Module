@@ -39,10 +39,10 @@ function worldViewInitGM() {
     center: kenya,
     mapTypeId: google.maps.MapTypeId.HYBRID
   };
+  worldview_map = new google.maps.Map(document.getElementById("WorldView_map"), options);
   
   var worldView_KML = new google.maps.KmlLayer(worldview_url);
   worldView_KML.setMap(worldview_map);
-  worldview_map = new google.maps.Map(document.getElementById("WorldView_map"), options);
 }
 
 
@@ -50,6 +50,7 @@ function worldViewInitGM() {
 
 function worldViewFailure(errorCode) {
   if (errorCode == 'ERR_CREATE_PLUGIN') {
+    document.getElementById('WorldView_tou').innerHTML += '<br>To view all features of this page download the <a href="http://www.google.com/earth/explore/products/plugin.html">Google Earth Plugin</a>.';
     worldViewInitGM();
   } else {
     alert('There was an unknown error with error code: '
