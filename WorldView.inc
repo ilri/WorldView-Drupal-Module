@@ -64,7 +64,7 @@ function _WorldView_external_db($host, $user, $pass, $name) {
  * @return DOMElement $restStyleNode
  *   A DOMElement containing the icon style
 */
-function _WorldView_Icon(&$dom, $icon = 'default') {
+function _WorldView_Icon(&$dom, $icon = 'default', $x = 0.5, $y = 0.5) {
   if (substr($icon, -4) == '.png') {
     $icon = substr($icon, 0, -4);
   }
@@ -77,8 +77,14 @@ function _WorldView_Icon(&$dom, $icon = 'default') {
   $restHref = $dom->createElement('href', url('', array('absolute' => True)) . '/'
                                           . drupal_get_path('module', 'WorldView')
                                           . '/icons/' . $icon . '.png');
+  $hotspot = $dom->createElement('hotSpot');
+  $hotspot->setAttribute('x', $x);
+  $hotspot->setAttribute('y', $y);
+  $hotspot->setAttribute('xunits', 'fraction');
+  $hotspot->setAttribute('yunits', 'fraction');
   $restIconNode->appendChild($restHref);
   $restIconstyleNode->appendChild($restIconNode);
+  $restIconstyleNode->appendChild($hotspot);
   $restStyleNode->appendChild($restIconstyleNode);
   return $restStyleNode;
 }

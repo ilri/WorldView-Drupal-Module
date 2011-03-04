@@ -337,7 +337,7 @@ function WorldView_KML($file = 'ILRI') {
   $docNode->appendChild(_WorldView_Icon($dom, 'biohazard'));
   $docNode->appendChild(_WorldView_Icon($dom, 'syringe'));
   $docNode->appendChild(_WorldView_Icon($dom, 'tent'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'ILRI2'));
+  $docNode->appendChild(_WorldView_Icon($dom, 'ILRI2', 0.5, 0));
   
   $fnode = $dom->createElement('Folder');
   $folderNode = $parNode->appendChild($fnode);
