@@ -3,73 +3,15 @@
 
 /**
  * @file
- *   Constants used by the WorldView module
+ *   Functions and constants used by the WorldView module
  *
  *   This include file implements the defaults for the WorldView module.
 */
 
 /**
- * The KML indentation
-*/
-define('KML_INDENTATION', "\t");
-
-/**
  * Icons directory to be used
 */
-define('WORLDVIEW_ICONS', DRUPAL_ROOT . '/' . drupal_get_path('module', 'WorldView') . '/icons');
-
-/**
- * Prints an indentation block
- *
- * @param int $indentation
- *   The indentation value for the block
-*/
-function _WorldView_indent($indentation = 0) {
-  $output = '';
-  for ($i = 0; $i < $indentation; $i++) {
-    $output .= KML_INDENTATION;
-  }
-  return $output;
-}
-
-
-/**
- * Turns an array into KML that can be read by Google Earth
- * 
- * @param array $input
- *   An associative array of KML values to be converted
- * @param int $indentation
- *   Indentation value for proper formatting
- *
- * @return string $KML
- *   A formatted KML string
-*/
-function _WorldView_print_KML($input = array(), $indentation = 0) {
-  $output = '';
-  foreach ($input as $key => $value) {
-    $output .= _WorldView_indent($indentation);
-    $output .= '<' . $key . '>';
-    if (is_array($value)) {
-      $output .= "\n" . _WorldView_print_KML($value, ++$indentation);
-      $output .= _WorldView_indent(--$indentation);
-    } else {
-      if (strstr($value, "\n")) {
-        foreach(explode("\n", $value) as $line) {
-          $output .= "\n" . _WorldView_indent($indentation) . $line;;
-        }
-		$output .=  "\n" . _WorldView_indent($indentation);
-      } else {
-        $output .= $value;
-      }
-    }
-    if (strpos($key, ' ')) {
-      $output .= '</' . substr($key, 0, strpos($key, ' ')) . '>' . "\n";
-    } else {
-      $output .= '</' . $key . '>' . "\n";
-    }
-  }
-  return $output;
-}
+define('WORLDVIEW_ROOT', DRUPAL_ROOT . '/' . drupal_get_path('module', 'WorldView'));
 
 /**
  * A simple interface to an external database
@@ -122,7 +64,7 @@ function _WorldView_external_db($host, $user, $pass, $name) {
  * @return DOMElement $restStyleNode
  *   A DOMElement containing the icon style
 */
-function _WorldView_Icons(&$dom, $icon = 'default') {
+function _WorldView_Icon(&$dom, $icon = 'default') {
   if (substr($icon, -4) == '.png') {
     $icon = substr($icon, 0, -4);
   }
@@ -164,9 +106,9 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
   $placeNode = $dom->createElement('Placemark');
   
   $placeNode->setAttribute('id', 'placemark' . str_replace(' ', '_', $name));
-  $nameNode = $dom->createElement('name', $name);
+  $nameNode = $dom->createElement('name', '');
   $placeNode->appendChild($nameNode);
-  $descNode = $dom->createElement('description', $desc);
+  $descNode = $dom->createElement('description', '<h3>' . $name . '</h3>' . $desc);
   $placeNode->appendChild($descNode);
   $styleUrl = $dom->createElement('styleUrl', '#' . $icon . 'Style');
   $placeNode->appendChild($styleUrl);
@@ -181,9 +123,38 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
 }
 
 /**
+ * Returns a HTML table from an array
+ * 
+ * Creates a HTML table from an array formatted as array[rows][cols], note that
+ * the width of the table will be calculated from the first row so make sure to
+ * fill the first row with blank columns if the table needs to be wider than 
+ * the first row.
+ *
+ * @param string title
+ *   Title string of the table
+ * @param array table
+ *   An array of table values formatted as array[rows][cols]
+ *
+ * @return string html
+ *   A HTML string containing the finished table
+*/
+function _WorldView_Table($title = '', $table = array(array(''))) {
+  $cols = count($table[0]);
+  $html = '<table><tr><th colspan=' . $cols . '>' . $title . '</td></tr>';
+  foreach ($table as $row) {
+    $html .= '<tr>';
+    foreach ($row as $col) {
+      $html .= '<td>' . $col . '</td>';
+    }
+    $html .= '</tr>';
+  }
+  return $html . '</table>';
+}
+
+/**
  * TEMPORARY FUNCTIONS - REMOVE THESE OR AT LEAST DON'T RELY ON THEM
- */
- 
+*/
+
 /**
  * Creates a placemark for ILRI
  *
@@ -199,9 +170,8 @@ function _WorldView_ILRI(&$dom, $icon = "default") {
   return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '-1.2686', '36.722287', $icon);
 }
 
-
 /**
- * Creates a placemark for each sampling date
+ * Creates a placemark for each Livestock sampling date and origin
  *
  * @param DOMDocument &$dom
  *   The XML generator
@@ -210,25 +180,38 @@ function _WorldView_ILRI(&$dom, $icon = "default") {
  *
  * @return array DOMElement $placeNode
  *   An array containing DOMElements with sampling placemarks
- *
 */
 function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
   $query = "SELECT DATE_FORMAT(s.VisitDate, '%b %d %Y') AS date, 
-              s.origin,
-              s.Latitude,
-              s.Longitude
+                   s.origin,
+                   s.Latitude,
+                   s.Longitude,
+                   SUM(IF(s.project = 5 AND s.AnimalID LIKE 'AVD%', 1, 0)) AS sampled_animals, 
+                   SUM(IF(ca.organism = 2, 1, 0)) AS sampled_goats, 
+                   SUM(IF(ca.organism = 2 AND ca.sex = 'Female', 1, 0)) AS female_goats, 
+                   SUM(IF(ca.organism = 3 AND ca.sex = 'Female', 1, 0)) AS female_sheep, 
+                   SUM(IF(ca.organism = 2 AND ca.Status = 'Alive', 1, 0)) AS goats_alive, 
+                   SUM(IF(ca.organism = 2 AND ca.Status = 'Dead', 1, 0)) AS goats_dead, 
+                   SUM(IF(ca.organism = 3 AND ca.Status = 'Alive', 1, 0)) AS sheep_alive, 
+                   SUM(IF(ca.organism = 3 AND ca.Status = 'Dead', 1, 0)) AS sheep_dead, 
+                   SUM(IF(ca.organism = 3 AND et.STATUS = 'POSITIVE', 1, 0)) AS sheep_positive, 
+                   SUM(IF(ca.organism = 2 AND et.STATUS = 'POSITIVE', 1, 0)) AS goats_positive, 
+                   TO_DAYS(s.VisitDate) AS days
             FROM (
-              SELECT DISTINCT AnimalID AS AnimalID, 
-                VisitDate, 
-                origin, 
-                count, 
-                Latitude, 
-                Longitude
-              FROM samples
-                ) s
-              JOIN custom_animals ca ON s.AnimalID = ca.animal_id 
-              JOIN elisaTest et ON et.sampleID = s.count 
-            GROUP BY date;";
+                   SELECT AnimalID, 
+                          VisitDate, 
+                          origin, 
+                          project, 
+                          count, 
+                          Latitude, 
+                          Longitude
+                    FROM samples
+                    GROUP BY AnimalID
+                  ) s
+                  JOIN custom_animals ca ON s.AnimalID = ca.animal_id 
+                  LEFT JOIN elisaTest et ON et.sampleID = s.count 
+            WHERE VisitDate AND origin IS NOT NULL AND s.project = 5
+            GROUP BY TO_DAYS(date), origin;";
   $samplingTrips = array();
   $conn = _WorldView_external_db(variable_get('worldview_db_host', 'localhost'), 
                                  variable_get('worldview_db_user', ''),
@@ -237,7 +220,68 @@ function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
   if (!$conn['error']) {
     $results = mysql_query($query, $conn['link']);
     while($result = mysql_fetch_row($results)) {
-      array_push($samplingTrips, _WorldView_Placemark($dom, $result[0], $result[1], $result[2], $result[3], $icon));
+      $name        = $result[1] . ' on ' . $result[0] . '.';
+      $description = _WorldView_Table($result[4] . ' animals sampled', 
+                                      array(array('Sheep', $result[7] . ' F', ($result[4] - $result[5] - $result[7]) . ' M'),
+                                            array('Goats', $result[6] . ' F', ($result[5] - $result[6]) . ' M')
+                                            )
+                                      ) .  
+                     _WorldView_Table('Animal Status',
+                                      array(array('', 'Alive', 'Dead', 'Unacc.'),
+                                            array('Sheep', $result[10], $result[11], ($result[4] - $result[5]) - ($result[10] + $result[11])),
+                                            array('Goats', $result[8], $result[9], $result[5] - $result[8] - $result[9])
+                                            )
+                                      ) . 
+                     _WorldView_Table('ELISA Results',
+                                      array(array('', 'Positive', 'Negative'),
+                                            array('Sheep', $result[12], ($result[4] - $result[5]) - $result[12]),
+                                            array('Goats', $result[13], $result[5] - $result[13])
+                                            )
+                                      );
+      $latitude    = $result[2];
+      $longitude   = $result[3];
+      array_push($samplingTrips, _WorldView_Placemark($dom, $name, $description, $latitude, $longitude, $icon));
+    }
+  } else {
+    throw new Exception($conn['error']); 
+  }
+  return $samplingTrips;
+}
+
+/**
+ * Creates a placemark for each Wildlife sampling date and origin
+ *
+ * @param DOMDocument &$dom
+ *   The XML generator
+ * @param string $icon
+ *   Name of the icon png to be used.
+ *
+ * @return array DOMElement $placeNode
+ *   An array containing DOMElements with sampling placemarks
+*/
+function _WorldView_WildlifeTrips(&$dom, $icon = "jeep") {
+  $query = "SELECT DATE_FORMAT(VisitDate, '%b %d %Y') AS date, 
+                   origin,
+                   Latitude,
+                   Longitude,
+                   SUM(IF(count, 1, 0)) AS samples
+            FROM samples
+            WHERE VisitDate AND origin IS NOT NULL AND project = 5
+            AND AnimalID NOT IN (SELECT animal_id FROM custom_animals)
+            GROUP BY TO_DAYS(date), origin;";
+  $samplingTrips = array();
+  $conn = _WorldView_external_db(variable_get('worldview_db_host', 'localhost'), 
+                                 variable_get('worldview_db_user', ''),
+                                 variable_get('worldview_db_pass', ''),
+                                 variable_get('worldview_db_name', ''));
+  if (!$conn['error']) {
+    $results = mysql_query($query, $conn['link']);
+    while($result = mysql_fetch_row($results)) {
+      $name        = $result[1] . ' on ' . $result[0] . '.';
+      $description = 'Wildlife sampling trip.<hr/> ' . $result[4] . ' samples collected.';
+      $latitude    = $result[2];
+      $longitude   = $result[3];
+      array_push($samplingTrips, _WorldView_Placemark($dom, $name, $description, $latitude, $longitude, $icon));
     }
   } else {
     throw new Exception($conn['error']); 
