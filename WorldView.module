@@ -78,12 +78,6 @@ function WorldView_permission(){
                                      don\'t have a paid google earth license.'
                                      ),
                ), 
-               'access WorldView private' => array(
-                 'title' => t('Access WorldView Private'),
-                 'description' => t('This permission can be used to hide 
-                                     sensitive information from unauthorized 
-                                     users.'),
-               ),
               );
 }
 
@@ -118,47 +112,6 @@ function WorldView_admin() {
 	                       debugging.'),
 	  '#required' => TRUE,
 	  );
-	$form['worldview_database'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('External Database Settings'),
-    '#collapsible' => TRUE,
-  );
-  $form['worldview_database']['worldview_db_host'] = 
-    array('#type' => 'textfield',
-	  '#title' => t('Database Host'),
-	  '#default_value' => variable_get('worldview_db_host', 'localhost'),
-	  '#size' => 120,
-	  '#maxlength' => 90,
-	  '#description' => t('Host name of the database. I.e. "http://example.com/" or "127.0.0.1".'),
-	  '#required' => FALSE,
-	  );
-  $form['worldview_database']['worldview_db_user'] = 
-    array('#type' => 'textfield',
-    '#title' => t('Database User'),
-    '#default_value' => variable_get('worldview_db_user', ''),
-    '#size' => 120,
-    '#maxlength' => 90,
-    '#description' => t('User name for the database. I.e. "root" on insecure systems or your username or project username for most systems.'),
-    '#required' => FALSE,
-    );
-  $form['worldview_database']['worldview_db_pass'] = 
-    array('#type' => 'password',
-    '#title' => t('Database Password'),
-    '#default_value' => variable_get('worldview_db_pass', ''),
-    '#size' => 120,
-    '#maxlength' => 90,
-    '#description' => t('Password for your user in the database. Keep it secret. Keep it secure.'),
-    '#required' => FALSE,
-    );
-  $form['worldview_database']['worldview_db_name'] = 
-    array('#type' => 'textfield',
-    '#title' => t('Database Name'),
-    '#default_value' => variable_get('worldview_db_name', ''),
-    '#size' => 120,
-    '#maxlength' => 90,
-    '#description' => t('Name of the database to be used at the specified host. Do not confuse with username.'),
-    '#required' => FALSE,
-    );
   return system_settings_form($form); 
 }
 
@@ -187,8 +140,8 @@ function WorldView_admin_validate($form, &$form_state) {
  *
  * Defines paths to WorldView pages and defines WorldView menu items. The 
  * items that are defined are:
- * - admin/config/worldview: This is the administration page
- * - /worldview: This is the main map page
+ * - admin/config/content/WorldView: This is the administration page
+ * - /worldview: This is the KML generation hook
 */
 function WorldView_menu() {
   $items = array();
