@@ -22,8 +22,8 @@ function worldViewInit(instance) {
      worldview_map.getFeatures().appendChild(object);
      // fly to Kenya
      var kenya = worldview_map.createLookAt('');
-     kenya.set(-4, 38, 900000, worldview_map.ALTITUDE_RELATIVE_TO_GROUND, 
-                0, 20, 0 );
+     kenya.set(0, 38, 950000, worldview_map.ALTITUDE_RELATIVE_TO_GROUND, 
+                0, 0, 0 );
      worldview_map.getView().setAbstractView(kenya);
    }
    // fetch the KML

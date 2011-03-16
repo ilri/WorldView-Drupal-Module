@@ -163,9 +163,12 @@ function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
   if (module_exists('LabCollector')) {
     $events = LabCollector_SamplingTrips();
     foreach ( $events as $event ) {
+      $information  = $event['start_date'];
+      $information .= $event['end_date'] ? ' to ' . $event['end_date'] : '';
+      $information .= $event['open'] . $event['private'] . '<hr>';
       array_push($samplingTrips, 
                  _WorldView_Placemark($dom, $event['name'], 
-                                            $event['open'] . $event['private'] . '<hr>', 
+                                            $information, 
                                             $event['latitude'], 
                                             $event['longitude'], 
                                             $icon));
@@ -190,9 +193,12 @@ function _WorldView_WildlifeTrips(&$dom, $icon = "jeep") {
   if (module_exists('LabCollector')) {
     $events = LabCollector_WildlifeTrips();
     foreach ( $events as $event ) {
+      $information  = $event['start_date'];
+      $information .= $event['end_date'] ? ' to ' . $event['end_date'] : '';
+      $information .= '<br>' . $event['open'] . $event['private'] . '<hr>';
       array_push($wildlifeTrips, 
                  _WorldView_Placemark($dom, $event['name'], 
-                                            $event['open'] . $event['private'], 
+                                            $information, 
                                             $event['latitude'], 
                                             $event['longitude'], 
                                             $icon));
