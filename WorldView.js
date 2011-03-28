@@ -1,4 +1,28 @@
-<!-- Old code! -->
+/**
+ * Copyright 2011 ILRI
+ *
+ * This file is part of WorldView.
+ * 
+ * WorldView is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * WorldView is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with WorldView.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/** 
+ * This file contains the javascripts to load and initialize the Google Earth 
+ * or Google Maps window on the website. The scripts are in the process of 
+ * being re-written and more comments and explanations will be added as soon as
+ * that is done.
+*/
 
 var worldview_map;
 var worldview_path = window.location.hostname + window.location.pathname;
@@ -44,9 +68,6 @@ function worldViewInitGM() {
   var worldView_KML = new google.maps.KmlLayer(worldview_url);
   worldView_KML.setMap(worldview_map);
 }
-
-
-<!-- new code! -->
 
 function worldViewFailure(errorCode) {
   if (errorCode == 'ERR_CREATE_PLUGIN') {
