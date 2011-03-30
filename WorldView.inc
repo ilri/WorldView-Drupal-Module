@@ -180,8 +180,8 @@ function _WorldView_ILRI(&$dom, $icon = "default") {
 */
 function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
   $samplingTrips = array();
-  if (module_exists('LabCollector')) {
-    $events = LabCollector_SamplingTrips();
+  if (module_exists('DataBridge')) {
+    $events = DataBridge_SamplingTrips();
     foreach ( $events as $event ) {
       $information  = $event['start_date'];
       $information .= $event['end_date'] ? ' to ' . $event['end_date'] : '';
@@ -210,8 +210,8 @@ function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
 */
 function _WorldView_WildlifeTrips(&$dom, $icon = "jeep") {
   $wildlifeTrips = array();
-  if (module_exists('LabCollector')) {
-    $events = LabCollector_WildlifeTrips();
+  if (module_exists('DataBridge')) {
+    $events = DataBridge_WildlifeTrips();
     foreach ( $events as $event ) {
       $information  = $event['start_date'];
       $information .= $event['end_date'] ? ' to ' . $event['end_date'] : '';
