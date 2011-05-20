@@ -306,10 +306,10 @@ function WorldView_KML($file = 'ILRI') {
   $docNode = $parNode->appendChild($dnode);
   
   $docNode->appendChild(_WorldView_Icon($dom, 'default'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'jeep'));
+  $docNode->appendChild(_WorldView_Icon($dom, 'livestock'));
   $docNode->appendChild(_WorldView_Icon($dom, 'biohazard'));
   $docNode->appendChild(_WorldView_Icon($dom, 'syringe'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'tent'));
+  $docNode->appendChild(_WorldView_Icon($dom, 'wildlife'));
   $docNode->appendChild(_WorldView_Icon($dom, 'ILRI2', 0.5, 0));
   
   $fnode = $dom->createElement('Folder');
@@ -317,11 +317,8 @@ function WorldView_KML($file = 'ILRI') {
   
   $folderNode->appendChild(_WorldView_ILRI($dom, 'ILRI2'));
   try {
-    foreach(_WorldView_SamplingTrips($dom, 'jeep') as $samplingTrip) {
-      $folderNode->appendChild($samplingTrip);
-    }
-    foreach(_WorldView_WildlifeTrips($dom, 'tent') as $samplingTrip) {
-      $folderNode->appendChild($samplingTrip);
+    foreach(WorldView_DataBridge($dom) as $sampling) {
+      $folderNode->appendChild($sampling);
     }
   } catch (Exception $e) {
     error_log($e, 0);

@@ -148,12 +148,73 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
 }
 
 /**
+ * If installed this function gets information from the databridge module.
+ *
+ * If the DataBridge module is installed this function will extract sampling
+ * types and plot them on the map. If not installed this function does 
+ * nothing and can safely be ignored. Note that all samplings will attempt to
+ * use a map icon with the same name as their sampling class. i.e. "livestock" 
+ * samplings will attempt to use "livestock.png" as icon.
+ *
+ * @return array $samplings
+ *   A nested array of sampling information.
+ *
+*/
+function WorldView_DataBridge(&$dom) {
+  $placemarks = array();
+  if (module_exists('DataBridge')) {
+    $raw = DataBridge_getSamplingInfo();
+    $data = array();
+    foreach ($raw as $class => $trips) {
+      $data[$class] = array();
+      foreach ($trips as $id => $trip) {
+        $info = '';
+        
+        // Add dates
+        
+        $info .= strftime('%Y-%m-%d', $trip['start_date']);
+        $info .= $trip['end_date'] ?  ' to ' . strftime('%Y-%m-%d %H:%M', $trip['end_date']) : '';
+        
+        // Print the table
+        $info .= theme('table', DataBridge_table($trip));
+        
+        // In case the user has permission to view sensitive data, add links 
+        // to the information pane. This currently doesn't work as verifying 
+        // that users are logged in is tricky - since the data is requested by
+        // the google earth server and not by the client.
+        //
+        // NOTE: TO REMEDY THIS PROBLEM THE INTITAL PERMISSION CHECK IS OMITTED
+        /*
+        if (user_access('access DataBridge private')) {
+        */
+          $info .= '<hr />' . l('Download Summary', '') . 
+                      ' | ' . l('View Details', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
+                                                          '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
+        /*
+        }
+        */
+        
+        // Concatenate everything into a neat information array
+        array_push($placemarks,  _WorldView_Placemark($dom, $trip['location'] . ' ' . ucfirst($class) . ' Sampling', 
+                                                            $info, 
+                                                            $trip['latitude'], 
+                                                            $trip['longitude'], 
+                                                            $class));
+      }
+    }
+  }
+  return $placemarks;
+}
+
+/**
  * ILRI ONLY FUNCTIONS - REMOVE THESE OR AT LEAST DON'T RELY ON THEM AS THEY
  * ARE PRONE TO CHANGING TO FIT THE SPECIFIC NEEDS OF THE ILRI IMPLEMENTATION
 */
 
 /**
  * Creates a placemark for ILRI
+ *
+ * TODO: replace with a static data handler.
  *
  * @param DOMDocument &$dom
  *   The XML generator
@@ -166,66 +227,3 @@ function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default"
 function _WorldView_ILRI(&$dom, $icon = "default") {
   return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '-1.2686', '36.722287', $icon);
 }
-
-/**
- * Creates a placemark for each Livestock sampling date and origin
- *
- * @param DOMDocument &$dom
- *   The XML generator
- * @param string $icon
- *   Name of the icon png to be used.
- *
- * @return array DOMElement $placeNode
- *   An array containing DOMElements with sampling placemarks
-*/
-function _WorldView_SamplingTrips(&$dom, $icon = "jeep") {
-  $samplingTrips = array();
-  if (module_exists('DataBridge')) {
-    $events = DataBridge_SamplingTrips();
-    foreach ( $events as $event ) {
-      $information  = strftime('%b %d %Y', $event['start_date']);
-      $information .= $event['end_date'] ? ' to ' . strftime('%b %d %Y', $event['end_date']) : '';
-      $information .= $event['open'];
-      $information .= user_access('access DataBridge private') ? $event['private'] . ' | ' . $event['link'] : '' ;
-      $information .= '<hr>';
-      array_push($samplingTrips, 
-                 _WorldView_Placemark($dom, $event['name'], 
-                                            $information, 
-                                            $event['latitude'], 
-                                            $event['longitude'], 
-                                            $icon));
-    }
-  }
-  return $samplingTrips;
-}
-
-/**
- * Creates a placemark for each Wildlife sampling date and origin
- *
- * @param DOMDocument &$dom
- *   The XML generator
- * @param string $icon
- *   Name of the icon png to be used.
- *
- * @return array DOMElement $placeNode
- *   An array containing DOMElements with sampling placemarks
-*/
-function _WorldView_WildlifeTrips(&$dom, $icon = "jeep") {
-  $wildlifeTrips = array();
-  if (module_exists('DataBridge')) {
-    $events = DataBridge_WildlifeTrips();
-    foreach ( $events as $event ) {
-      $information  = strftime('%b %d %Y', $event['start_date']);
-      $information .= $event['end_date'] ? ' to ' . strftime('%b %d %Y', $event['end_date']) : '';
-      $information .= '<br>' . $event['open'] . $event['private'] . '<hr>';
-      array_push($wildlifeTrips, 
-                 _WorldView_Placemark($dom, $event['name'], 
-                                            $information, 
-                                            $event['latitude'], 
-                                            $event['longitude'], 
-                                            $icon));
-    }
-  }
-  return $wildlifeTrips;
-}
-
