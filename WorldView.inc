@@ -187,7 +187,8 @@ function WorldView_DataBridge(&$dom) {
         /*
         if (user_access('access DataBridge private')) {
         */
-          $info .= '<hr />' . l('Download Summary', '') . 
+          $info .= '<hr />' . l('Download Summary', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
+                                              '/' . strftime('%Y-%m-%d', $trip['start_date']) . '/xls') . 
                       ' | ' . l('View Details', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
                                                           '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
         /*
