@@ -1,3 +1,5 @@
+<?php
+
 /**
  * Copyright 2011 ILRI
  *
@@ -17,15 +19,10 @@
  * along with WorldView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#WorldView_map {
-    min-width: 600px;
-    height: 500px;
-    background: #eee;
-}
-
-#WorldView_tou {
-    min-width: 600px;
-    height: 20px;
-    font-family: Trebuchet MS, Verdana;
-    font-size: 8pt;
-}
+/**
+ * @file
+ *   Google Maps functions and constants used by the WorldView module
+ *
+ *   This include file implements google maps functions for the WorldView 
+ *   module. 
+*/

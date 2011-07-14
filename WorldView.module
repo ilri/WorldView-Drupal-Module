@@ -30,6 +30,9 @@
 function WorldView_init() {
 	drupal_add_css(drupal_get_path('module', 'WorldView') . '/WorldView.css');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.inc');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.databridge.inc');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_earth.inc');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_maps.inc');
 	if (variable_get('worldview_api_key', '') != '') {
 	  drupal_add_js('https://www.google.com/jsapi?key=' . variable_get('worldview_api_key', ''), 'external');
 	  drupal_add_js(drupal_get_path('module', 'WorldView') . '/WorldView.js');
@@ -116,6 +119,18 @@ function WorldView_admin() {
     '#title' => t('Google Maps/Earth Settings'),
     '#collapsible' => TRUE,
   );
+  $form['worldview_google']['worldview_default'] = 
+    array('#type' => 'select',
+    '#title' => t('Default Mapping Mode'),
+    '#default_value' => variable_get('worldview_default', 'google_earth'),
+    '#options' => array('google_maps' => 'Google Maps v. 3.5',
+                        'google_earth' => 'Google Earth'),
+    '#description' => t('Select the default mapping mode for the WorldView 
+                         maps. If Google Earth is set to default the system
+                         will fallback to Google Maps if the Google Earth 
+                         plugin is not installed.'),
+    '#required' => TRUE,
+    );
   $form['worldview_google']['worldview_api_key'] = 
     array('#type' => 'textfield',
 	  '#title' => t('Google Maps API key'),
@@ -131,27 +146,18 @@ function WorldView_admin() {
 	                       debugging.'),
 	  '#required' => TRUE,
 	  );
+	$form['worldview_friends'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Compatible modules'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_friends']['worldview_databridge'] = 
+    array('#type' => 'checkbox',
+    '#title' => t('Databridge LIMS interface'),
+    '#default_value' => variable_get('worldview_databridge', False),
+    '#description' => t('Imports data from databridge and shows it on the map.'),
+    );
   return system_settings_form($form); 
-}
-
-/**
- * Validation function for the WorldView administration form.
- *
- * Validation function for the WorldView administration form. As of now no 
- * validation is implemented so make sure to check your form values if 
- * things are not working as expected.
- *
- * @param array $form
- *   An associative array containing the structure of the form.
- * @param array &$form_state
- *   A keyed array containing the current state of the form. The current 
- *   user-submitted data is stored in $form_state['values'], though form 
- *   validation functions are passed an explicit copy of the values for the 
- *   sake of simplicity. Validation handlers can also $form_state to pass 
- *   information on to submit handlers. 
-*/
-function WorldView_admin_validate($form, &$form_state) {
-
 }
 
 /**
@@ -172,8 +178,18 @@ function WorldView_menu() {
 	  'access arguments' => array('administer WorldView'),
 	  'type' => MENU_NORMAL_ITEM,
 	  );
-	$items['worldview'] =
+	$items['worldview/kml'] =
     array('page callback' => 'WorldView_KML',
+	  'access arguments' => array('access WorldView'),
+	  'type' => MENU_CALLBACK,
+	  );
+	$items['worldview/data'] =
+    array('page callback' => 'WorldView_data',
+	  'access arguments' => array('access WorldView'),
+	  'type' => MENU_CALLBACK,
+	  );
+	$items['worldview/settings'] =
+    array('page callback' => 'WorldView_get_settings',
 	  'access arguments' => array('access WorldView'),
 	  'type' => MENU_CALLBACK,
 	  );
@@ -183,19 +199,13 @@ function WorldView_menu() {
 /**
  * Creates the blocks of the WorldView module.
  *
- * Creates the block content for the WorldView module. Two different blocks 
- * are created, one with controls for what to display on the maps, and one 
- * that holds the actual map itself.
+ * Creates the block content for the WorldView module. One block is created,
+ * which holds the map.
  * 
  * @return array $blocks
 */
 function WorldView_block_info(){
   $blocks = array();
-
-  // This is the control block
-  $blocks['WorldView_controls'] = array(
-    'info' => t('WorldView Controls'),
-  );
   
   // This is the map block
   $blocks['WorldView_map'] = array(
@@ -203,44 +213,6 @@ function WorldView_block_info(){
   );
   
   return $blocks;
-}
-
-/**
- * Creates the configuration form for the WorldView module blocks.
- *
- * Creates the configuration form for the WorldView module blocks.
- *
- * @param string $delta
- *   Which block is being configured. This is a unique identifier for the 
- *   block within the module, defined in hook_block_info().
- *
- * @return array $form
- *   A configuration form, if one is needed for your block beyond the standard 
- *   elements that the block module provides (block title, visibility, etc.).
-*/
-function WorldView_block_configure($delta = '') {
-  $form = array();
-  return $form; 
-}
-
-/**
- * Saves the configuration options from WorldView_block_configure()
- *
- * This hook allows you to save the block-specific configuration settings 
- * defined in WorldView_block_configure().
- *
- * @param string $delta
- *   Which block is being configured. This is a unique identifier for the 
- *   block within the module, defined in hook_block_info().
- *
- * @param array $edit
- *   The submitted form data from the configuration form.
- *
- * @return array $form
- *   A configuration form, if one is needed for your block beyond the standard 
- *   elements that the block module provides (block title, visibility, etc.).
-*/
-function WorldView_block_save($delta = '', $edit = array()) {
 }
 
 /**
@@ -269,60 +241,14 @@ function WorldView_block_view($delta = '') {
     $languages = language_list();
     // Todo: Implement translations
   }
+  
   if ($delta == 'WorldView_map') {
     $page_content['content'] .= '<div id="WorldView_map"></div>';
     $page_content['content'] .= '<div id="WorldView_tou">';
     $page_content['content'] .= t('Before using this tool please read and understand Googles ' .  l(t('Terms of Use'), 'http://code.google.com/apis/maps/terms.html') . '.');
     $page_content['content'] .= '</div>';
   }
-  if ($delta == 'WorldView_controls') {
-    $page_content['content'] .= '<div id="WorldView_controls">[controls placeholder]</div>';
-  }
+  
   $page_content['content'] .= '</div>';
   return $page_content;
-}
-
-/**
- * Prints database information formatted as a KML file
- *
- * Note that this function returns a KML file and does not print anything to 
- * drupal. This is a purely back-end function.
- *
- * @param string $file
- *   Name of the KML generation function to be used internally
-*/
-function WorldView_KML($file = 'ILRI') {
-  $dom = new DOMDocument('1.0', 'UTF-8');
-  $dom->formatOutput = true;
-  drupal_add_http_header('Content-Type', 'application/vnd.google-earth.kml+xml');
-  drupal_add_http_header('Content-Disposition', 'inline; filename=' . $file . '.kml;');
-  
-  // Creates the root KML element and appends it to the root document.
-  $node = $dom->createElementNS('http://earth.google.com/kml/2.1', 'kml');
-  $parNode = $dom->appendChild($node);
-
-  // Creates a KML Document element and append it to the KML element.
-  $dnode = $dom->createElement('Document');
-  $docNode = $parNode->appendChild($dnode);
-  
-  $docNode->appendChild(_WorldView_Icon($dom, 'default'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'livestock'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'biohazard'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'syringe'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'wildlife'));
-  $docNode->appendChild(_WorldView_Icon($dom, 'ILRI2', 0.5, 0));
-  
-  $fnode = $dom->createElement('Folder');
-  $folderNode = $parNode->appendChild($fnode);
-  
-  $folderNode->appendChild(_WorldView_ILRI($dom, 'ILRI2'));
-  try {
-    foreach(WorldView_DataBridge($dom) as $sampling) {
-      $folderNode->appendChild($sampling);
-    }
-  } catch (Exception $e) {
-    error_log($e, 0);
-  }
-  echo $dom->saveXML();
-  exit(0);
 }

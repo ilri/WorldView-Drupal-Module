@@ -28,203 +28,192 @@
 */
 
 /**
- * WorldView directory
+ * Handles placemarks internally in the module.
+ *
+ * A placemark is basically just an associative array. This class handles how 
+ * it the internal data is converted to KML for Google Earth, supplied to 
+ * Google Maps etc.
 */
-define('WORLDVIEW_ROOT', DRUPAL_ROOT . '/' . drupal_get_path('module', 'WorldView'));
-
-/**
- * A simple interface to an external database
- *
- * @param string $host
- *   Hostname of the external database
- * @param string $user
- *   Username for the external database
- * @param string $pass
- *   Password for the external database
- * @param string $name
- *   Name of the external database
- *
- * @return array $connection
- *   An associative array with three values:
- *   - link: a resource containing the database interface
- *   - status: a status message
- *   - error: any error messages
-*/
-function _WorldView_external_db($host, $user, $pass, $name) {
-  // Connect to database and verify connection
-  $connection['link'] = mysql_connect($host, $user, $pass);
-  if (!$connection['link']) {
-    $connection['error'] = mysql_error();
-    $connection['status'] = 'Not Connected.';
-  }
-  else {
-    if (!mysql_select_db($name, $connection['link'])) {
-      $connection['error'] = 'Database ' . $name . ' not found.';
-      $connection['status'] = 'Not Connected.';
-    } else {
-        $connection['error'] = NULL;
-        $connection['status'] = $name.'@'.$host;
-    }
-  }
-  return $connection;
-}
-
-/**
- * Formats WorldView icons to be used in Google Earth.
- *
- * Creates an associative array of icons and default formatting information to
- * be used by _WorldView_print_KML.
- *
- * @param DOMDocument &$dom
- *   The XML generator
- * @param string $icon
- *   Name of the icon png to be loaded.
- *
- * @return DOMElement $restStyleNode
- *   A DOMElement containing the icon style
-*/
-function _WorldView_Icon(&$dom, $icon = 'default', $x = 0.5, $y = 0.5) {
-  if (substr($icon, -4) == '.png') {
-    $icon = substr($icon, 0, -4);
-  }
+class WorldView_placemark {
+  var $latitude;
+  var $longitude;
+  var $title;
+  var $link;
+  var $information;
+  var $start_date;
+  var $end_date;
+  var $icon;
+  var $db_id;
   
-  $restStyleNode = $dom->createElement('Style');
-  $restStyleNode->setAttribute('id', $icon . 'Style');
-  $restIconstyleNode = $dom->createElement('IconStyle');
-  $restIconstyleNode->setAttribute('id', $icon . 'Icon');
-  $restIconNode = $dom->createElement('Icon');
-  $restHref = $dom->createElement('href', url('', array('absolute' => True)) . '/'
-                                          . drupal_get_path('module', 'WorldView')
-                                          . '/icons/' . $icon . '.png');
-  $hotspot = $dom->createElement('hotSpot');
-  $hotspot->setAttribute('x', $x);
-  $hotspot->setAttribute('y', $y);
-  $hotspot->setAttribute('xunits', 'fraction');
-  $hotspot->setAttribute('yunits', 'fraction');
-  $restIconNode->appendChild($restHref);
-  $restIconstyleNode->appendChild($restIconNode);
-  $restIconstyleNode->appendChild($hotspot);
-  $restStyleNode->appendChild($restIconstyleNode);
-  return $restStyleNode;
-}
-
-/**
- * Creates a KML placemark
- *
- * @param DOMDocument &$dom
- *   The XML generator
- * @param string $name
- *   Name of the placemark.
- * @param string $desc
- *   description of the placemark.
- * @param string $lat
- *   Latitude of the placemark.
- * @param string $lon
- *   Longtitude of the placemark.
- * @param string $icon
- *   Name of the icon png to be used.
- *
- * @return DOMElement $placeNode
- *   A DOMElement containing the ILRI placemark
-*/
-function _WorldView_Placemark(&$dom, $name, $desc, $lat, $lon, $icon = "default") {
-  $placeNode = $dom->createElement('Placemark');
+  var $created_by;
+  var $created_at;
+  var $updated_by;
+  var $updated_at;
   
-  $placeNode->setAttribute('id', 'placemark' . str_replace(' ', '_', $name));
-  $nameNode = $dom->createElement('name', '');
-  $placeNode->appendChild($nameNode);
-  $descNode = $dom->createElement('description', '<h3>' . $name . '</h3>' . $desc);
-  $placeNode->appendChild($descNode);
-  $styleUrl = $dom->createElement('styleUrl', '#' . $icon . 'Style');
-  $placeNode->appendChild($styleUrl);
-  
-  $pointNode = $dom->createElement('Point');
-  $placeNode->appendChild($pointNode);
-  
-  $coorStr = $lon . ',' . $lat;
-  $coorNode = $dom->createElement('coordinates', $coorStr);
-  $pointNode->appendChild($coorNode);
-  return $placeNode;
-}
-
-/**
- * If installed this function gets information from the databridge module.
- *
- * If the DataBridge module is installed this function will extract sampling
- * types and plot them on the map. If not installed this function does 
- * nothing and can safely be ignored. Note that all samplings will attempt to
- * use a map icon with the same name as their sampling class. i.e. "livestock" 
- * samplings will attempt to use "livestock.png" as icon.
- *
- * @return array $samplings
- *   A nested array of sampling information.
- *
-*/
-function WorldView_DataBridge(&$dom) {
-  $placemarks = array();
-  if (module_exists('DataBridge')) {
-    $raw = DataBridge_getSamplingInfo();
-    $data = array();
-    foreach ($raw as $class => $trips) {
-      $data[$class] = array();
-      foreach ($trips as $id => $trip) {
-        $info = '';
-        
-        // Add dates
-        
-        $info .= strftime('%Y-%m-%d', $trip['start_date']);
-        $info .= $trip['end_date'] ?  ' to ' . strftime('%Y-%m-%d %H:%M', $trip['end_date']) : '';
-        
-        // Print the table
-        $info .= theme('table', DataBridge_table($trip));
-        
-        // In case the user has permission to view sensitive data, add links 
-        // to the information pane. This currently doesn't work as verifying 
-        // that users are logged in is tricky - since the data is requested by
-        // the google earth server and not by the client.
-        //
-        // NOTE: TO REMEDY THIS PROBLEM THE INTITAL PERMISSION CHECK IS OMITTED
-        /*
-        if (user_access('access DataBridge private')) {
-        */
-          $info .= '<hr />' . l('Download Summary', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
-                                              '/' . strftime('%Y-%m-%d', $trip['start_date']) . '/xls') . 
-                      ' | ' . l('View Details', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
-                                                          '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
-        /*
+  /**
+   * Constructor. Creates an empty placemark if no variables are passed.
+   *
+   * @param $latitude = NULL
+   *   Latitude of the placemark in decimal degrees.
+   * @param $longitude = NULL
+   *   Longitude of the placemark in decimal degrees.
+   * @param $title = ""
+   *   Title of the placemark.
+   * @param $information = NULL
+   *   Information to show when the placemark is expanded. May include HTML 
+   *   tags.
+   * @param $link = NULL
+   *   Array formated as [URL, link_text].
+   * @param $start_date = NULL
+   *   Start date of the placemark event.
+   * @param $end_date = NULL
+   *   End date of the placemark event.
+  */
+  public function __construct($latitude = NULL, $longitude = NULL, $title = "", $information = NULL, $link = NULL, $start_date = NULL, $end_date = NULL, $icon = NULL) {
+    $this->latitude    = $latitude;
+    $this->longitude   = $longitude;
+    $this->title       = $title;
+    $this->information = $information;
+    $this->start_date  = $start_date;
+    $this->end_date    = $end_date;
+    $this->icon        = $icon;
+    
+    // Do fanciness with links
+    if ( $link && is_array($link) ) {
+      if ( is_array($link[0]) ) {
+        foreach ( $link as $l ) {
+          if ( $this->link ) {
+            $this->link .= l($l[0], $l[1]) . ' | ';
+          } else {
+            $this->link = l($l[0], $l[1]) . ' | ';            
+          }
         }
-        */
-        
-        // Concatenate everything into a neat information array
-        array_push($placemarks,  _WorldView_Placemark($dom, $trip['location'] . ' ' . ucfirst($class) . ' Sampling', 
-                                                            $info, 
-                                                            $trip['latitude'], 
-                                                            $trip['longitude'], 
-                                                            $class));
+        $this->link = substr($this->link, 0, -3);
+      } else {
+        $this->link = l($link[0], $link[1]);
       }
+    } else {
+      $this->link = NULL;
     }
   }
-  return $placemarks;
+
+  /**
+   * Saves the placemark to the database.
+  */
+  public function save() {
+    global $user;
+    $place = array('latitude'    => $this->latitude,
+                   'longitude'   => $this->longitude,
+                   'title'       => $this->title,
+                   'link'        => $this->link,
+                   'information' => $this->information,
+                   'start_date'  => $this->$start_date,
+                   'end_date'    => $this->$end_date,
+                   'icon'        => $this->$icon,
+                   );
+    if ( $this->$db_id ) {
+      $place['id'] = $this->$db_id;
+      $place['updated_by'] = $user->name;
+      $place['updated_at'] = time();
+    } else {
+      $place['created_by'] = $user->name;
+      $place['created_at'] = time();
+    }
+    db_insert('worldview_places')
+              ->fields($place)
+              ->execute();
+  }
+  
+  /**
+   * Loads a placemark from the database given an $id.
+   *
+   * @param int $id
+   *   Database id of the placemark to load.
+  */
+  public function load($id) {
+    $db_info = db_select('worldview_places', 'w')
+                        ->fields('w') // Equivalent of "SELECT * FROM"
+                        ->condition('id', $id, '=')
+                        ->execute()
+                        ->fetchAssoc();
+    
+    $this->latitude    = $db_info['latitude'];
+    $this->longitude   = $db_info['longitude'];
+    $this->title       = $db_info['title'];
+    $this->information = $db_info['information'];
+    $this->link        = $db_info['link'];
+    $this->start_date  = $db_info['start_date'];
+    $this->end_date    = $db_info['end_date'];
+    $this->icon        = $db_info['icon'];
+    
+    $this->db_id       = $db_info['id'];
+    $this->created_by  = $db_info['created_by'];
+    $this->created_at  = $db_info['created_at'];
+    $this->updated_by  = $db_info['updated_by'];
+    $this->updated_at  = $db_info['updated_at'];
+  }
+  
 }
 
 /**
- * ILRI ONLY FUNCTIONS - REMOVE THESE OR AT LEAST DON'T RELY ON THEM AS THEY
- * ARE PRONE TO CHANGING TO FIT THE SPECIFIC NEEDS OF THE ILRI IMPLEMENTATION
+ * Gets all places from the database into an array.
+ *
+ * @return array $places
+ *   An array of all places in the internal database
 */
+function WorldView_get_places() {
+  
+  // Get places from the internal database
+  $ids = db_select('worldview_places', 'w')
+                   ->fields('w', array('id')) 
+                   ->execute()
+                   ->fetchAssoc();
+  $places = array();
+  foreach ( $ids as $id ) {
+    $place = new WorldView_placemark();
+    if ( is_array($id) ) {
+      $place->load($id['id']);
+    } else {
+      $place->load($id);
+    }
+    array_push($places, $place);
+  }
+  
+  // Get places from Databridge if it is installed and activated
+  if ( module_exists('DataBridge') && variable_get('worldview_databridge', False)) {
+    $places = array_merge($places, WorldView_DataBridge());
+  }
+  
+  return $places;
+}
 
 /**
- * Creates a placemark for ILRI
+ * Returns module settings to the javascript that load the maps.
  *
- * TODO: replace with a static data handler.
- *
- * @param DOMDocument &$dom
- *   The XML generator
- * @param string $icon
- *   Name of the icon png to be used.
- *
- * @return DOMElement $placeNode
- *   A DOMElement containing the ILRI placemark
+ * @return JSON $settings
+ *   An array of settings in JSON format.
 */
-function _WorldView_ILRI(&$dom, $icon = "default") {
-  return _WorldView_Placemark($dom, 'ILRI', 'the place to be', '-1.2686', '36.722287', $icon);
+function WorldView_get_settings() {
+  $settings = array('path' => url('worldview/data', array('absolute' => TRUE, )),
+                    'mode' => variable_get('worldview_default', 'google_earth'),
+                    'zoom' => 7,
+                    'lat'  => 0,
+                    'lng'  => 38,
+                    );
+  return drupal_json_output($settings);
+}
+
+/**
+ * Formats and returns data to the maps. 
+ *
+ * The map data is returned in KML or GML format depending on what kind of 
+ * mapping is used. Both these formats are XML based.
+*/
+function WorldView_data() {
+  $places = WorldView_get_places();
+  
+//  eval('$data = WorldView_' . variable_get('worldview_default', 'google_earth') . '_data($places)');
+  print WorldView_google_earth_data($places);
+
+  exit(0);
 }

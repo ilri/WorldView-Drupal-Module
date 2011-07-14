@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * Copyright 2011 ILRI
+ *
+ * This file is part of WorldView.
+ * 
+ * WorldView is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * WorldView is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with WorldView.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @file
+ *   Schema defintion, Install, update and uninstall functions for the WorldView
+ *   module.
+*/
+
+/**
+ * Creates the schema for the internal WorldView database.
+ *
+ * The schema has one table, worldview_places, which keeps track of the places.
+*/
+function WorldView_schema() {
+  return array('worldview_places' => 
+               array('description' => 'Stores place information for the WorldView module.',
+                     'fields'      => 
+                     array('id'     => array('description' => 'Auto incrementing ID value.',
+                                             'type' => 'serial',
+                                             'size' => 'normal',
+                                             'not null' => True,
+                                             'unsigned' => True,
+                                             ),
+                           'latitude' => array('description' => 'Latitude of the position.',
+                                             'type' => 'float',
+                                             'size' => 'medium',
+                                             'not null' => True,
+                                             ),
+                           'longitude' => array('description' => 'Longitude of the position.',
+                                             'type' => 'float',
+                                             'size' => 'medium',
+                                             'not null' => True,
+                                             ),
+                           'title'  => array('description' => 'Title of the place.',
+                                             'type' => 'varchar',
+                                             'length' => 50,
+                                             'not null' => True,
+                                             ),
+                           'link'   => array('description' => 'Link for more information.',
+                                             'type' => 'varchar',
+                                             'length' => 50,
+                                             ),
+                           'information' => array('description' => 'Information about the place.',
+                                             'type' => 'text',
+                                             'size' => 'medium',
+                                             ),
+                           'start_date' => array('description' => 'Start date if the placemrk is an event at a place.',
+                                             'type' => 'int',
+                                             'size' => 'normal',
+                                             ),
+                           'end_date' => array('description' => 'End date if the placemark is an event at a place.',
+                                             'type' => 'int',
+                                             'size' => 'normal',
+                                             ),
+                           'icon'   => array('description' => 'Icon to show the place on the map.',
+                                             'type' => 'varchar',
+                                             'length' => 25,
+                                             ),
+                           'created_by' => array('description' => 'The user who created the placemark on the map.',
+                                             'type' => 'varchar',
+                                             'length' => 40,
+                                             ),
+                           'created_at' => array('description' => 'The time the placemark on the map was created.',
+                                             'type' => 'int',
+                                             'size' => 'normal',
+                                             ),
+                           'updated_by' => array('description' => 'The user who last updated the placemark on the map.',
+                                             'type' => 'varchar',
+                                             'length' => 40,
+                                             ),
+                           'updated_at' => array('description' => 'The time the placemark on the map was updated.',
+                                             'type' => 'int',
+                                             'size' => 'normal',
+                                             ),
+                           ),
+                     'primary key' => array('id',),
+                     'mysql_suffix' => " DEFAULT CHARACTER SET UTF8",
+                     ),
+               );
+}
+
+/**
+ * Installs default behaviour for the WorldView module.
+ *
+ * By now this function is just a placeholder and does not 
+ * install anything to the database or otherwise.
+*/
+function WorldView_install() {
+  $places = array(array('id'          => 1,
+                        'latitude'    => -1.2686,
+                        'longitude'   => 36.722287,
+                        'title'       => 'International Livestock Research Institute',
+                        'link'        => 'http://ilri.org/',
+                        'information' => 'Part of the Consultative Group on International Agricultural Research (CGIAR), the International Livestock Research Institute works with partners worldwide to help poor people keep their farm animals alive and productive, increase and sustain their livestock and farm productivity and find profitable markets for their animal products.',
+                        'start_date'  => NULL,
+                        'end_date'    => NULL,
+                        'icon'        => 'ilri.png',
+                        'created_by'  => NULL,
+                        'created_at'  => NULL,
+                        'updated_by'  => NULL,
+                        'updated_at'  => NULL,
+                        ),
+                  );
+  foreach($places as $place) {
+    db_insert('worldview_places')
+              ->fields($place)
+              ->execute();
+  }
+}
+
+/**
+ * Uninstalls the WorldView module.
+ *
+ * This function empties the WorldView database so make sure to backup your data
+ * before uninstalling the module!
+*/
+function WorldView_uninstall() {
+  // Delete TimeView system variables
+  variable_del('worldview_default');
+  variable_del('worldview_api_key');
+}

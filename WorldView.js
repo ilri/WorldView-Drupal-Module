@@ -25,8 +25,7 @@
 */
 
 var worldview_map;
-var worldview_path = window.location.hostname + window.location.pathname;
-var worldview_url  = 'http://' + worldview_path + '?q=worldview';
+var worldview_url  = '';
 google.load('earth', '1');
 
 function worldViewInit(instance) {
@@ -54,25 +53,12 @@ function worldViewInit(instance) {
    google.earth.fetchKml(worldview_map, worldview_url, finished);
 }
 
-<!-- Google Maps Fallback -->
-
-function worldViewInitGM() {
-  var kenya = new google.maps.LatLng(0, 38);
-  var options = {
-    zoom: 6,
-    center: kenya,
-    mapTypeId: google.maps.MapTypeId.HYBRID
-  };
-  worldview_map = new google.maps.Map(document.getElementById("WorldView_map"), options);
-  
-  var worldView_KML = new google.maps.KmlLayer(worldview_url);
-  worldView_KML.setMap(worldview_map);
-}
-
 function worldViewFailure(errorCode) {
   if (errorCode == 'ERR_CREATE_PLUGIN') {
     document.getElementById('WorldView_tou').innerHTML += '<br>To view all features of this page download the <a href="http://www.google.com/earth/explore/products/plugin.html">Google Earth Plugin</a>.';
-    worldViewInitGM();
+    
+    <!-- Google Maps Fallback -->
+    worldView_load_google_maps();
   } else {
     alert('There was an unknown error with error code: '
           + errorCode
@@ -80,15 +66,49 @@ function worldViewFailure(errorCode) {
   }
 }
 
+function worldView_load_google_maps(path, mapZoom, lat, lng) {
+  
+  // Set map variables, I like the Hybrid map so it's hard coded.
+  var mapCenter = new google.maps.LatLng(lat, lng);
+  var options = {
+    zoom: mapZoom,
+    center: mapCenter,
+    mapTypeId: google.maps.MapTypeId.TERRAIN
+  };
+  
+  // Create the map in our div.
+  worldview_map = new google.maps.Map(document.getElementById("WorldView_map"), options);
+  
+  // Load the data and add it to our map.
+  var worldView_GML = new google.maps.KmlLayer(path);
+  worldView_GML.setMap(worldview_map);
+}
+
+function worldView_load_google_earth(path, mapZoom, lat, lng) {
+  worldview_url = path;
+  google.setOnLoadCallback(google.earth.createInstance('WorldView_map', 
+                                                       worldViewInit, 
+                                                       worldViewFailure)
+                          );
+}
+
 (function ($) {
 
   Drupal.behaviors.WorldView = {
     attach: function(context, settings) {
+      
+      // Only load our map scripts if there is a map div on the page
       if ($('#WorldView_map').length) {
-        google.setOnLoadCallback(google.earth.createInstance('WorldView_map', 
-                                                             worldViewInit, 
-                                                             worldViewFailure)
-                                );
+        
+        // Load settings from drupal
+        $.get('?q=worldview/settings', function(data) {
+          
+          // Init the map using the mode from drupal
+          eval('worldView_load_' + data.mode + '("' + data.path  + '", ' 
+                                                    + data.zoom + ', ' + 
+                                                    + data.lat  + ', ' + 
+                                                    + data.lng  + ')');     
+        }, "json");
       }
     }
   };
