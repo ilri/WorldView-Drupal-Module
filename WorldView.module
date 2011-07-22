@@ -36,8 +36,8 @@ function WorldView_init() {
 	if (variable_get('worldview_api_key', '') != '') {
 	  drupal_add_js('https://www.google.com/jsapi?key=' . variable_get('worldview_api_key', ''), 'external');
 	  drupal_add_js(drupal_get_path('module', 'WorldView') . '/WorldView.js');
-	}
-	drupal_add_js('http://maps.google.com/maps/api/js?sensor=false', 'external');
+	}  
+  drupal_add_js('http://maps.googleapis.com/maps/api/js?sensor=false', 'external');
 }
 
 /** 

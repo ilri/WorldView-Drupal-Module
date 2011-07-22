@@ -52,14 +52,16 @@ function WorldView_DataBridge() {
                                          $trip['longitude'], // longitude
                                          ucfirst($class) . ' sampling in ' . $trip['location'], // title
                                          theme('table', DataBridge_table($trip)), // information
-                                         array(array('Download Summary', 
-                                                     'databridge/sampling/' . $class . '/' . 
-                                                     $trip['location'] . '/' . 
-                                                     strftime('%Y-%m-%d', $trip['start_date']) . '/xls'), 
-                                               array('View Details', 'databridge/sampling/' . $class . '/' .
-                                                     $trip['location'] . '/' . 
-                                                     strftime('%Y-%m-%d', $trip['start_date'])), 
-                                              ), // link
+                                         user_access('access DataBridge private') ? 
+                                                     array(array('Download Summary', 
+                                                                 'databridge/sampling/' . $class . '/' . 
+                                                                 $trip['location'] . '/' . 
+                                                                 strftime('%Y-%m-%d', $trip['start_date']) . '/xls'), 
+                                                           array('View Details', 'databridge/sampling/' . $class . '/' .
+                                                                 $trip['location'] . '/' . 
+                                                                 strftime('%Y-%m-%d', $trip['start_date'])), 
+                                                          )
+                                                     : NULL, // link
                                          $trip['start_date'], // start_date
                                          $trip['end_date'], // end_date
                                          $class);

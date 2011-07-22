@@ -25,6 +25,8 @@
 */
 
 var worldview_map;
+var placemarks = new Array();
+var infoWindows = new Array();
 var worldview_url  = '';
 google.load('earth', '1');
 
@@ -79,9 +81,88 @@ function worldView_load_google_maps(path, mapZoom, lat, lng) {
   // Create the map in our div.
   worldview_map = new google.maps.Map(document.getElementById("WorldView_map"), options);
   
-  // Load the data and add it to our map.
-  var worldView_GML = new google.maps.KmlLayer(path);
-  worldView_GML.setMap(worldview_map);
+  // Load the data from the database
+  $.get(path + "/google_maps", function(data) {
+    
+    // Parse the data we got into a DOM
+    parser=new DOMParser();
+    var xml = parser.parseFromString(data,"text/xml");
+    
+    var markers = xml.documentElement.getElementsByTagName("marker");
+    var temp = "";
+    for (var i = 0; i < markers.length; i++) {
+      // list variables for debugging
+      if (!temp) {
+        for (var j = 0; j < markers[i].attributes.length; j++) {
+          temp += markers[i].attributes[j].name + " => " + markers[i].attributes[j].value + "\n";
+        }
+        //alert(temp);
+      }
+      
+      var icon = new google.maps.MarkerImage(markers[i].getAttribute("icon"),
+          new google.maps.Size(64, 64),
+          // The origin for this image is 0,0.
+          new google.maps.Point(0,0),
+          // The anchor for this image is the middle of the base at 64,32.
+          new google.maps.Point(32, 64));
+      
+      placemarks[i] = new google.maps.Marker(
+        { position: new google.maps.LatLng(markers[i].getAttribute("latitude"), 
+                                           markers[i].getAttribute("longitude")),
+          map: worldview_map,
+          title: markers[i].getAttribute("title"),
+          animation: google.maps.Animation.DROP,
+          icon: icon
+        } );
+      
+      // Format dates for the info window
+      var dates = "";
+      if ( markers[i].getAttribute("start_date") ) {
+        dates += markers[i].getAttribute("start_date");
+      };
+      if ( markers[i].getAttribute("end_date") ) {
+        dates += " to " + markers[i].getAttribute("end_date");
+      };
+      
+      // Format the placemark user info
+      var user_info = "";
+      if ( markers[i].getAttribute("created_by") ) {
+        user_info += "Created by: " + markers[i].getAttribute("created_by") +
+                     " at " + markers[i].getAttribute("created_at");
+      }
+      if ( markers[i].getAttribute("updated_by") ) {
+        user_info += "Updated by: " + markers[i].getAttribute("updated_by") +
+                     " at " + markers[i].getAttribute("updated_at");
+      }
+      
+      // Create the final content string
+      contentString = "<h3>" + markers[i].getAttribute("title") + "</h3>" + 
+                      "<hr>" + 
+                      "<small>" + dates + "</small>" + 
+                      markers[i].getAttribute("information") + 
+                      "<hr>" + 
+                      markers[i].getAttribute("link") + "<br>" + 
+                      "<small>" + user_info + "</small>"; 
+      
+      infoWindows[i] = new google.maps.InfoWindow(
+        { content: contentString
+        } );
+      
+      google.maps.event.addListener(placemarks[i], 'click', 
+        function() {
+          showInfo(this);
+        } );
+    }
+    function showInfo( placemark ) {
+      for (var i = 0; i < placemarks.length; ++i ) {
+        if ( placemarks[i] == placemark ) {
+          infoWindows[i].open(worldview_map, placemarks[i]);
+          break;
+        }
+      }
+    }
+    
+  });
 }
 
 function worldView_load_google_earth(path, mapZoom, lat, lng) {

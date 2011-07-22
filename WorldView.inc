@@ -209,11 +209,11 @@ function WorldView_get_settings() {
  * The map data is returned in KML or GML format depending on what kind of 
  * mapping is used. Both these formats are XML based.
 */
-function WorldView_data() {
+function WorldView_data($source = NULL) {
   $places = WorldView_get_places();
+  $source = $source ? $source : variable_get('worldview_default', 'google_earth');
   
-//  eval('$data = WorldView_' . variable_get('worldview_default', 'google_earth') . '_data($places)');
-  print WorldView_google_earth_data($places);
+  eval('echo WorldView_' . $source . '_data($places);');
 
   exit(0);
 }
