@@ -166,8 +166,8 @@ function WorldView_admin() {
     array('#type' => 'textfield',
     '#title' => t('Map Center: Latitude'),
     '#default_value' => variable_get('worldview_lat', 0),
-    '#size' => 2,
-    '#maxlength' => 2,
+    '#size' => 10,
+    '#maxlength' => 10,
     '#description' => t('The map center latitude. Default: 0 (equator).'),
     '#required' => TRUE,
     );
@@ -175,8 +175,8 @@ function WorldView_admin() {
     array('#type' => 'textfield',
     '#title' => t('Map Center: Longitude'),
     '#default_value' => variable_get('worldview_lon', 38),
-    '#size' => 2,
-    '#maxlength' => 2,
+    '#size' => 10,
+    '#maxlength' => 10,
     '#description' => t('The map center longitude. Default: 38 (Kenya).'),
     '#required' => TRUE,
     );
