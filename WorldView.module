@@ -146,10 +146,45 @@ function WorldView_admin() {
 	                       debugging.'),
 	  '#required' => TRUE,
 	  );
+	$form['worldview_map'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Map Settings'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_map']['worldview_zoom'] = 
+    array('#type' => 'textfield',
+	  '#title' => t('Map Zoom Level'),
+	  '#default_value' => variable_get('worldview_zoom', 7),
+	  '#size' => 2,
+	  '#maxlength' => 2,
+	  '#description' => t('The default zoom level of the maps. 
+	                       Between 0 (entire world) and 21 (individual buildings). 
+	                       Default: 7.'),
+	  '#required' => TRUE,
+    );
+  $form['worldview_map']['worldview_lat'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Map Center: Latitude'),
+    '#default_value' => variable_get('worldview_lat', 0),
+    '#size' => 2,
+    '#maxlength' => 2,
+    '#description' => t('The map center latitude. Default: 0 (equator).'),
+    '#required' => TRUE,
+    );
+  $form['worldview_map']['worldview_lon'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Map Center: Longitude'),
+    '#default_value' => variable_get('worldview_lon', 38),
+    '#size' => 2,
+    '#maxlength' => 2,
+    '#description' => t('The map center longitude. Default: 38 (Kenya).'),
+    '#required' => TRUE,
+    );
 	$form['worldview_friends'] = array(
     '#type' => 'fieldset',
     '#title' => t('Compatible modules'),
     '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
   $form['worldview_friends']['worldview_databridge'] = 
     array('#type' => 'checkbox',

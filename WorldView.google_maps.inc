@@ -38,8 +38,6 @@
 */
 function WorldView_google_maps_data($places) {
   // Set content type for Drupal
-  drupal_add_http_header('Content-Type', 'text/xml');
-  drupal_add_http_header('Content-Disposition', 'inline; filename=worldview.xml;');
   
   /* Create a new DOMDocument that will hold our XML, formatted output takes 
    * slightly more space but feels more neat and makes debugging easier.

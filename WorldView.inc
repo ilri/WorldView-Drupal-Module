@@ -196,9 +196,9 @@ function WorldView_get_places() {
 function WorldView_get_settings() {
   $settings = array('path' => url('worldview/data', array('absolute' => TRUE, )),
                     'mode' => variable_get('worldview_default', 'google_earth'),
-                    'zoom' => 7,
-                    'lat'  => 0,
-                    'lng'  => 38,
+                    'zoom' => variable_get('worldview_zoom', 7),
+                    'lat'  => variable_get('worldview_lat', 0),
+                    'lng'  => variable_get('worldview_lon', 38),
                     );
   return drupal_json_output($settings);
 }

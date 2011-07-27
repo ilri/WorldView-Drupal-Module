@@ -29,6 +29,9 @@ var placemarks = new Array();
 var infoWindows = new Array();
 var worldview_url  = '';
 google.load('earth', '1');
+var worldview_zoom;
+var worldview_lat;
+var worldview_lng;
 
 function worldViewInit(instance) {
    worldview_map = instance;
@@ -45,12 +48,13 @@ function worldViewInit(instance) {
        return;
      }
      worldview_map.getFeatures().appendChild(object);
-     // fly to Kenya
-     var kenya = worldview_map.createLookAt('');
-     kenya.set(0, 38, 950000, worldview_map.ALTITUDE_RELATIVE_TO_GROUND, 
-                0, 0, 0 );
-     worldview_map.getView().setAbstractView(kenya);
+     worldview_map.getView().setAbstractView(worldview_map_center);
    }
+   
+   // Set Map Center
+   var worldview_map_center = worldview_map.createLookAt('');
+   worldview_map_center.set(lat, lng, 950000, worldview_map.ALTITUDE_RELATIVE_TO_GROUND, 0, 0, 0 );
+   
    // fetch the KML
    google.earth.fetchKml(worldview_map, worldview_url, finished);
 }
@@ -167,6 +171,9 @@ function worldView_load_google_maps(path, mapZoom, lat, lng) {
 
 function worldView_load_google_earth(path, mapZoom, lat, lng) {
   worldview_url = path;
+  worldview_zoom = mapZoom;
+  worldview_lat = lat;
+  worldview_lng = lng;
   google.setOnLoadCallback(google.earth.createInstance('WorldView_map', 
                                                        worldViewInit, 
                                                        worldViewFailure)
