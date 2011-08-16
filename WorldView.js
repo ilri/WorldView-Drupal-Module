@@ -133,11 +133,11 @@ function worldView_load_google_maps(path, mapZoom, lat, lng) {
         var user_info = "";
         if ( markers[i].getAttribute("created_by") ) {
           user_info += "Created by: " + markers[i].getAttribute("created_by") +
-                       " at " + markers[i].getAttribute("created_at");
+                       " on " + markers[i].getAttribute("created_at");
         }
         if ( markers[i].getAttribute("updated_by") ) {
-          user_info += "Updated by: " + markers[i].getAttribute("updated_by") +
-                       " at " + markers[i].getAttribute("updated_at");
+          user_info += "<br>Updated by: " + markers[i].getAttribute("updated_by") +
+                       " on " + markers[i].getAttribute("updated_at");
         }
         
         // Create the final content string

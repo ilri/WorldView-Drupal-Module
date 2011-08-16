@@ -30,6 +30,7 @@
 function WorldView_init() {
 	drupal_add_css(drupal_get_path('module', 'WorldView') . '/WorldView.css');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.inc');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.database.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.databridge.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_earth.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_maps.inc');
@@ -228,6 +229,11 @@ function WorldView_menu() {
 	  'access arguments' => array('access WorldView'),
 	  'type' => MENU_CALLBACK,
 	  );
+	$items['worldview/edit'] =
+    array('page callback' => 'WorldView_edit',
+	  'access arguments' => array('administer WorldView'),
+	  'type' => MENU_CALLBACK,
+	  );
   return $items;
 }
 
@@ -285,5 +291,22 @@ function WorldView_block_view($delta = '') {
   }
   
   $page_content['content'] .= '</div>';
+  return $page_content;
+}
+
+/**
+ * Callback for worldview/edit. Adds, edits and deletes entries from the map.
+ *
+ * @param $id = NULL
+ *   If set, the function will edit or delete an existing entry.
+ *
+ * @return string $html
+ *   String containing the returned html.
+*/
+function WorldView_edit($id = NULL) {
+  $page_content  = '';
+  $page_content .= '<div id="WorldView_input">';
+  $page_content .= drupal_render(drupal_get_form('WorldView_input', WorldView_load($id)));
+  $page_content .= '</div>';
   return $page_content;
 }
