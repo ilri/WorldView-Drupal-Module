@@ -30,6 +30,7 @@
 function WorldView_init() {
 	drupal_add_css(drupal_get_path('module', 'WorldView') . '/WorldView.css');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.inc');
+	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.database.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.databridge.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_earth.inc');
 	include_once(drupal_get_path('module', 'WorldView') . '/WorldView.google_maps.inc');
@@ -146,10 +147,45 @@ function WorldView_admin() {
 	                       debugging.'),
 	  '#required' => TRUE,
 	  );
+	$form['worldview_map'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Map Settings'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_map']['worldview_zoom'] = 
+    array('#type' => 'textfield',
+	  '#title' => t('Map Zoom Level'),
+	  '#default_value' => variable_get('worldview_zoom', 7),
+	  '#size' => 2,
+	  '#maxlength' => 2,
+	  '#description' => t('The default zoom level of the maps. 
+	                       Between 0 (entire world) and 21 (individual buildings). 
+	                       Default: 7.'),
+	  '#required' => TRUE,
+    );
+  $form['worldview_map']['worldview_lat'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Map Center: Latitude'),
+    '#default_value' => variable_get('worldview_lat', 0),
+    '#size' => 10,
+    '#maxlength' => 10,
+    '#description' => t('The map center latitude. Default: 0 (equator).'),
+    '#required' => TRUE,
+    );
+  $form['worldview_map']['worldview_lon'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Map Center: Longitude'),
+    '#default_value' => variable_get('worldview_lon', 38),
+    '#size' => 10,
+    '#maxlength' => 10,
+    '#description' => t('The map center longitude. Default: 38 (Kenya).'),
+    '#required' => TRUE,
+    );
 	$form['worldview_friends'] = array(
     '#type' => 'fieldset',
     '#title' => t('Compatible modules'),
     '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
   $form['worldview_friends']['worldview_databridge'] = 
     array('#type' => 'checkbox',
@@ -191,6 +227,11 @@ function WorldView_menu() {
 	$items['worldview/settings'] =
     array('page callback' => 'WorldView_get_settings',
 	  'access arguments' => array('access WorldView'),
+	  'type' => MENU_CALLBACK,
+	  );
+	$items['worldview/edit'] =
+    array('page callback' => 'WorldView_edit',
+	  'access arguments' => array('administer WorldView'),
 	  'type' => MENU_CALLBACK,
 	  );
   return $items;
@@ -250,5 +291,22 @@ function WorldView_block_view($delta = '') {
   }
   
   $page_content['content'] .= '</div>';
+  return $page_content;
+}
+
+/**
+ * Callback for worldview/edit. Adds, edits and deletes entries from the map.
+ *
+ * @param $id = NULL
+ *   If set, the function will edit or delete an existing entry.
+ *
+ * @return string $html
+ *   String containing the returned html.
+*/
+function WorldView_edit($id = NULL) {
+  $page_content  = '';
+  $page_content .= '<div id="WorldView_input">';
+  $page_content .= drupal_render(drupal_get_form('WorldView_input', WorldView_load($id)));
+  $page_content .= '</div>';
   return $page_content;
 }
