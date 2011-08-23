@@ -38,8 +38,8 @@
 */
 function WorldView_google_earth_data($places) {
   // Set content type for Drupal
-//  drupal_add_http_header('Content-Type', 'application/vnd.google-earth.kml+xml');
-//  drupal_add_http_header('Content-Disposition', 'inline; filename=worldview.kml;');
+  drupal_add_http_header('Content-Type', 'application/vnd.google-earth.kml+xml');
+  drupal_add_http_header('Content-Disposition', 'inline; filename=worldview.kml;');
   
   /* Create a new DOMDocument that will hold our KML, formatted output takes 
    * slightly more space but feels more neat and makes debugging easier.

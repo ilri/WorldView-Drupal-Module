@@ -38,8 +38,6 @@
 */
 function WorldView_google_maps_data($places) {
   // Set content type for Drupal
-  drupal_add_http_header('Content-Type', 'text/xml');
-  drupal_add_http_header('Content-Disposition', 'inline; filename=worldview.xml;');
   
   /* Create a new DOMDocument that will hold our XML, formatted output takes 
    * slightly more space but feels more neat and makes debugging easier.
@@ -75,14 +73,14 @@ function WorldView_google_maps_data($places) {
     $newnode->setAttribute("latitude", $place->latitude);
     $newnode->setAttribute("longitude", $place->longitude);
     $newnode->setAttribute("title", $place->title);
-    $newnode->setAttribute("link", $place->link);
+    $newnode->setAttribute("link", l($place->link, $place->link));
     $newnode->setAttribute("information", $place->information);
     $newnode->setAttribute("start_date", $place->start_date ? strftime('%Y-%m-%d', $place->start_date) : NULL);
     $newnode->setAttribute("end_date", $place->end_date ? strftime('%Y-%m-%d', $place->end_date) : NULL);
     $newnode->setAttribute("icon", $url);
-    $newnode->setAttribute("created_by", $place->created_by ? strftime('%Y-%m-%d', $place->created_by) : NULL);
+    $newnode->setAttribute("created_by", $place->created_by ? $place->created_by : NULL);
     $newnode->setAttribute("created_at", $place->created_at ? strftime('%Y-%m-%d', $place->created_at) : NULL);
-    $newnode->setAttribute("updated_by", $place->updated_by ? strftime('%Y-%m-%d', $place->updated_by) : NULL);
+    $newnode->setAttribute("updated_by", $place->updated_by ? $place->updated_by : NULL);
     $newnode->setAttribute("updated_at", $place->updated_at ? strftime('%Y-%m-%d', $place->updated_at) : NULL);
   }
   

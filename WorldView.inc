@@ -166,10 +166,9 @@ function WorldView_get_places() {
   // Get places from the internal database
   $ids = db_select('worldview_places', 'w')
                    ->fields('w', array('id')) 
-                   ->execute()
-                   ->fetchAssoc();
+                   ->execute();
   $places = array();
-  foreach ( $ids as $id ) {
+  while ( $id = $ids->fetchAssoc() ) {
     $place = new WorldView_placemark();
     if ( is_array($id) ) {
       $place->load($id['id']);
@@ -196,9 +195,9 @@ function WorldView_get_places() {
 function WorldView_get_settings() {
   $settings = array('path' => url('worldview/data', array('absolute' => TRUE, )),
                     'mode' => variable_get('worldview_default', 'google_earth'),
-                    'zoom' => 7,
-                    'lat'  => 0,
-                    'lng'  => 38,
+                    'zoom' => variable_get('worldview_zoom', 7),
+                    'lat'  => variable_get('worldview_lat', 0),
+                    'lng'  => variable_get('worldview_lon', 38),
                     );
   return drupal_json_output($settings);
 }
@@ -216,4 +215,175 @@ function WorldView_data($source = NULL) {
   eval('echo WorldView_' . $source . '_data($places);');
 
   exit(0);
+}
+
+/**
+ * Returns a form to be used by the WorldView_edit function.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+ * @param array $entry
+ *   Contains the form fields.
+ *
+ * @return array $form
+ *   A drupal form.
+*/
+function WorldView_input($form, &$form_state, $entry) {
+  // Set id to define if we're editing or creating a new entry
+  $form['id'] =
+    array('#type' => 'hidden',
+    '#value' => isset($entry['id']) ? $entry['id'] : NULL,
+    );
+  
+  // fieldset for position information
+  $form['worldview_position'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Position'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_position']['latitude'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<table><tr><td>',
+    '#suffix' => '</td>',
+	  '#title' => t('Latitude'),
+	  '#size' => 20,
+	  '#maxlength' => 30,
+	  '#description' => t("Latitude part of the position in Decimal Degrees."),
+	  '#required' => TRUE,
+	  '#default_value' => $entry['latitude']
+	  );
+  $form['worldview_position']['longitude'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<td>',
+    '#suffix' => '</td></tr></table>',
+    '#title' => t('Longitude'),
+    '#size' => 20,
+    '#maxlength' => 30,
+    '#description' => t("Longitude part of the position in Decimal Degrees."),
+    '#required' => TRUE,
+    '#default_value' => $entry['longitude']
+    );
+  
+  // fieldset for general information
+  $form['worldview_general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General Information'),
+    '#collapsible' => TRUE,
+  );
+  $form['worldview_general']['title'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<table><tr><td>',
+    '#suffix' => '</td>',
+    '#title' => t('Title'),
+    '#size' => 50,
+    '#maxlength' => 50,
+    '#description' => t("Title of the map entry."),
+    '#required' => TRUE,
+    '#default_value' => $entry['title']
+    );
+  $form['worldview_general']['link'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<td>',
+    '#suffix' => '</td>',
+    '#title' => t('Link'),
+    '#size' => 50,
+    '#maxlength' => 50,
+    '#description' => t("Link to be placed on the entry."),
+    '#required' => FALSE,
+    '#default_value' => $entry['link']
+    );
+  $form['worldview_general']['icon'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<td>',
+    '#suffix' => '</td></tr>',
+    '#title' => t('Icon'),
+    '#size' => 25,
+    '#maxlength' => 25,
+    '#description' => t("Icon to be placed on the map."),
+    '#required' => FALSE,
+    '#default_value' => $entry['icon']
+    );
+  $form['worldview_general']['information'] = 
+    array('#type' => 'textarea',
+    '#prefix' => '<tr><td colspan="3">',
+    '#suffix' => '</td></tr></table>',
+    '#title' => t('Information'),
+    '#description' => t("The main content of the entry."),
+    '#required' => FALSE,
+    '#default_value' => $entry['information']
+    );
+
+  // fieldset for time information
+  $form['worldview_time'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Time'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['worldview_time']['start_date'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<table><tr><td>',
+    '#suffix' => '</td>',
+    '#title' => t('Start Date'),
+    '#size' => 20,
+    '#maxlength' => 30,
+    '#description' => t("Start date and time formatted as 'YYYY-MM-DD HH:MM'."),
+    '#required' => FALSE,
+    '#default_value' => $entry['start_date']
+    );
+  $form['worldview_time']['end_date'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<td>',
+    '#suffix' => '</td></tr></table>',
+    '#title' => t('End date'),
+    '#size' => 20,
+    '#maxlength' => 30,
+    '#description' => t("End date and time formatted as 'YYYY-MM-DD HH:MM'."),
+    '#required' => FALSE,
+    '#default_value' => $entry['end_date']
+    );
+	
+	// SUBMIT!!
+	$form['submit'] = 
+	  array('#type' => 'submit',
+	  '#value' => 'Submit form',
+    '#title' => t('Submit.'),
+	   
+	  );
+	
+	// return the form
+	return $form;
+}
+
+/*
+ * Validates the input from WorldView_input before it is saved to the database.
+ * 
+ * This function makes sure that all dates are in the expected format, that all 
+ * required fields are supplied and so on.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+*/
+function WorldView_input_validate(&$form, &$form_state) {
+}
+
+/*
+ * Submits the input from WorldView_input to the internal database.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+*/
+function WorldView_input_submit(&$form, &$form_state) {
+  if ( !$form_state['values']['id'] ) {
+    WorldView_insert($form_state['values']);
+  }
+  else {
+    WorldView_update($form_state['values']);
+  }
 }
